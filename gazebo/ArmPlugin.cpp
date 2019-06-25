@@ -37,7 +37,7 @@
 
 #define INPUT_WIDTH   512
 #define INPUT_HEIGHT  512
-#define OPTIMIZER "None"
+#define OPTIMIZER "RMSprop"
 #define LEARNING_RATE 0.0f
 #define REPLAY_MEMORY 10000
 #define BATCH_SIZE 8
@@ -132,23 +132,15 @@ void ArmPlugin::Load(physics::ModelPtr _parent, sdf::ElementPtr /*_sdf*/)
 
 	// Create our node for camera communication
 	cameraNode->Init();
-	
-	/*
-	/ TODO - Subscribe to camera topic
-	/
-	*/
-	
-	//cameraSub = None;
+
+	// Subscribe to camera topic
+	cameraSub = cameraNode->Subscribe("/gazebo/" WORLD_NAME "/camera/link/camera/image", &ArmPlugin::onCameraMsg, this);
 
 	// Create our node for collision detection
 	collisionNode->Init();
 		
-	/*
-	/ TODO - Subscribe to prop collision topic
-	/
-	*/
-	
-	//collisionSub = None;
+	// Subscribe to prop collision topic
+	collisionSub = collisionNode->Subscribe("/gazebo/" WORLD_NAME "/" PROP_NAME "/tube_link/my_contact", &ArmPlugin::onCollisionMsg, this);
 
 	// Listen to the update event. This event is broadcast every simulation iteration.
 	this->updateConnection = event::Events::ConnectWorldUpdateBegin(boost::bind(&ArmPlugin::OnUpdate, this, _1));
@@ -162,12 +154,10 @@ bool ArmPlugin::createAgent()
 		return true;
 
 			
-	/*
-	/ TODO - Create DQN Agent
-	/
-	*/
-	
-	agent = NULL;
+	// Create DQN Agent
+	agent = dqnAgent::Create(INPUT_WIDTH, INPUT_HEIGHT, INPUT_CHANNELS, DOF*2, OPTIMIZER, LEARNING_RATE, 
+							 REPLAY_MEMORY, BATCH_SIZE, GAMMA, EPS_START, EPS_END, 
+							 EPS_DECAY, USE_LSTM, LSTM_SIZE, ALLOW_RANDOM, DEBUG_DQN);
 
 	if( !agent )
 	{
