@@ -308,12 +308,15 @@ bool ArmPlugin::updateAgent()
 	// if the action is odd,  decrease the joint position by the delta parameter
 
 		
-	/*
-	/ TODO - Increase or decrease the joint velocity based on whether the action is even or odd
-	/
-	*/
-	
-	float velocity = 0.0; // TODO - Set joint velocity based on whether action is even or odd.
+
+	// Increase or decrease the joint velocity based on whether the action is even or odd
+	float velocity = vel[action/2];
+
+	if (action % 2 == 0){
+		velocity += actionVelDelta;
+	}
+	else
+		velocity -= actionVelDelta;
 
 	if( velocity < VELOCITY_MIN )
 		velocity = VELOCITY_MIN;
@@ -340,11 +343,14 @@ bool ArmPlugin::updateAgent()
 	}
 #else
 	
-	/*
-	/ TODO - Increase or decrease the joint position based on whether the action is even or odd
-	/
-	*/
-	float joint = 0.0; // TODO - Set joint position based on whether action is even or odd.
+	// Increase or decrease the joint position based on whether the action is even or odd
+	float joint = ref[action/2];
+
+	if (action % 2 == 0){
+		joint += actionJointDelta;
+	}
+	else
+		joint -= actionJointDelta;
 
 	// limit the joint to the specified range
 	if( joint < JOINT_MIN )
