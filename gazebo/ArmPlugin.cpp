@@ -1,3 +1,4 @@
+
 /* 
  * Author - Dustin Franklin (Nvidia Jetson Developer)
  * Modified by - Sahil Juneja, Kyle Stewart-Frantz
@@ -253,11 +254,15 @@ void ArmPlugin::onCollisionMsg(ConstContactsPtr &contacts)
 		/
 		*/
 		
-		bool collisionCheck = false;
-		if (strcmp(contacts->contact(i).collision1().c_str(), COLLISION_ITEM) == 0)
-			collisionCheck = true;
+		bool collisionCheckArm = false;
+		bool collisionCheckGripper = false;
+		if (strcmp(contacts->contact(i).collision1().c_str(), COLLISION_ITEM) == 0) {
+			collisionCheckArm = true;
+			if (strcmp(contacts->contact(i).collision2().c_str(), COLLISION_POINT) == 0)
+				collisionCheckGripper = true;
+		}
 		
-		if (collisionCheck)
+		if (collisionCheckArm)
 		{
 			rewardHistory = REWARD_WIN * 10;
 
@@ -606,9 +611,9 @@ void ArmPlugin::OnUpdate(const common::UpdateInfo& updateInfo)
 				// compute the smoothed moving average of the delta of the distance to the goal
 				avgGoalDelta  = (avgGoalDelta * 0.05) + (distDelta * 0.95);
 				if (avgGoalDelta > 0)
-					rewardHistory = REWARD_WIN * 10;
+					rewardHistory = REWARD_WIN * 1;
 				else
-					rewardHistory = REWARD_LOSS * 10;
+					rewardHistory = REWARD_LOSS * 1;
 				newReward     = true;	
 			}
 
