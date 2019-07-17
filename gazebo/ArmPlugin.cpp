@@ -18,9 +18,9 @@
 
 // Turn on velocity based control
 
-#define VELOCITY_CONTROL false	
-#define VELOCITY_MIN -0.2f
-#define VELOCITY_MAX  0.2f
+#define VELOCITY_CONTROL true	
+#define VELOCITY_MIN -0.05f
+#define VELOCITY_MAX  0.05f
 
 // Define DQN API Settings
 
@@ -32,12 +32,12 @@
 #define EPS_END 0.05f
 #define EPS_DECAY 200
 
-// Tune the following hyperparameters
+// Tune the following hyperparameters	
 
 #define INPUT_WIDTH   64
 #define INPUT_HEIGHT  64
 #define OPTIMIZER "RMSprop"
-#define LEARNING_RATE 0.1f
+#define LEARNING_RATE 0.001f
 #define REPLAY_MEMORY 20000
 #define BATCH_SIZE 32	
 #define USE_LSTM true
@@ -46,10 +46,10 @@
 // Define Reward Parameters
 
 #define REWARD_WIN  100.0f
-#define REWARD_LOSS -50.0f
-#define REWARD_TIMEOUT -10.0f
-#define REWARD_CLOSER 1.0f
-#define REWARD_FARTHER -2.0f
+#define REWARD_LOSS -100.0f
+#define REWARD_TIMEOUT -50.0f
+#define REWARD_CLOSER 10.0f
+#define REWARD_FARTHER -20.0f
 
 // Define Object Names
 #define WORLD_NAME "arm_world"
@@ -102,7 +102,7 @@ ArmPlugin::ArmPlugin() : ModelPlugin(), cameraNode(new gazebo::transport::Node()
 	inputRawWidth    = 0;
 	inputRawHeight   = 0;
 	actionJointDelta = 0.05f;
-	actionVelDelta   = 0.1f;
+	actionVelDelta   = 0.05f;
 	maxEpisodeLength = 100;
 	episodeFrames    = 0;
 
@@ -257,9 +257,17 @@ void ArmPlugin::onCollisionMsg(ConstContactsPtr &contacts)
 				collisionCheckGripper = true;
 		}
 		
-		if (collisionCheckArm)
+		if (collisionCheckGripper)
 		{
 			rewardHistory = REWARD_WIN;
+			newReward  = true;
+			endEpisode = true;
+
+			return;
+		}
+		if (collisionCheckArm)
+		{
+			rewardHistory = REWARD_LOSS;
 			newReward  = true;
 			endEpisode = true;
 
@@ -604,7 +612,7 @@ void ArmPlugin::OnUpdate(const common::UpdateInfo& updateInfo)
 
 				// compute the smoothed moving average of the delta of the distance to the goal
 				avgGoalDelta  = (avgGoalDelta * 0.05) + (distDelta * 0.95);
-				if (avgGoalDelta > 0)
+				if (distDelta > 0.0)
 					rewardHistory = REWARD_CLOSER;
 				else
 					rewardHistory = REWARD_FARTHER;
