@@ -17,7 +17,8 @@
 #define JOINT_MAX	 2.0f
 
 // Turn on velocity based control
-#define VELOCITY_CONTROL true
+
+#define VELOCITY_CONTROL false	
 #define VELOCITY_MIN -0.2f
 #define VELOCITY_MAX  0.2f
 
@@ -31,27 +32,24 @@
 #define EPS_END 0.05f
 #define EPS_DECAY 200
 
-/*
-/ TODO - Tune the following hyperparameters
-/
-*/
+// Tune the following hyperparameters
 
-#define INPUT_WIDTH   512
-#define INPUT_HEIGHT  512
+#define INPUT_WIDTH   64
+#define INPUT_HEIGHT  64
 #define OPTIMIZER "RMSprop"
 #define LEARNING_RATE 0.1f
-#define REPLAY_MEMORY 10000
-#define BATCH_SIZE 8
-#define USE_LSTM false
-#define LSTM_SIZE 32
+#define REPLAY_MEMORY 20000
+#define BATCH_SIZE 32	
+#define USE_LSTM true
+#define LSTM_SIZE 256
 
-/*
-/ TODO - Define Reward Parameters
-/
-*/
+// Define Reward Parameters
 
-#define REWARD_WIN  1.0f
-#define REWARD_LOSS -1.0f
+#define REWARD_WIN  100.0f
+#define REWARD_LOSS -50.0f
+#define REWARD_TIMEOUT -10.0f
+#define REWARD_CLOSER 1.0f
+#define REWARD_FARTHER -2.0f
 
 // Define Object Names
 #define WORLD_NAME "arm_world"
@@ -103,7 +101,7 @@ ArmPlugin::ArmPlugin() : ModelPlugin(), cameraNode(new gazebo::transport::Node()
 	inputBufferSize  = 0;
 	inputRawWidth    = 0;
 	inputRawHeight   = 0;
-	actionJointDelta = 0.15f;
+	actionJointDelta = 0.05f;
 	actionVelDelta   = 0.1f;
 	maxEpisodeLength = 100;
 	episodeFrames    = 0;
@@ -249,10 +247,7 @@ void ArmPlugin::onCollisionMsg(ConstContactsPtr &contacts)
 			     << "] and [" << contacts->contact(i).collision2() << "]\n";}
 
 	
-		/*
-		/ TODO - Check if there is collision between the arm and object, then issue learning reward
-		/
-		*/
+		// Check if there is collision between the arm and object, then issue learning reward
 		
 		bool collisionCheckArm = false;
 		bool collisionCheckGripper = false;
@@ -264,8 +259,7 @@ void ArmPlugin::onCollisionMsg(ConstContactsPtr &contacts)
 		
 		if (collisionCheckArm)
 		{
-			rewardHistory = REWARD_WIN * 10;
-
+			rewardHistory = REWARD_WIN;
 			newReward  = true;
 			endEpisode = true;
 
@@ -545,7 +539,7 @@ void ArmPlugin::OnUpdate(const common::UpdateInfo& updateInfo)
 	if( maxEpisodeLength > 0 && episodeFrames > maxEpisodeLength )
 	{
 		printf("ArmPlugin - triggering EOE, episode has exceeded %i frames\n", maxEpisodeLength);
-		rewardHistory = REWARD_LOSS;
+		rewardHistory = REWARD_TIMEOUT;
 		newReward     = true;
 		endEpisode    = true;
 	}
@@ -587,7 +581,7 @@ void ArmPlugin::OnUpdate(const common::UpdateInfo& updateInfo)
 						
 			if(DEBUG){printf("GROUND CONTACT, EOE\n");}
 
-			rewardHistory = REWARD_LOSS * 10;
+			rewardHistory = REWARD_LOSS;
 			newReward     = true;
 			endEpisode    = true;
 		}
@@ -611,9 +605,9 @@ void ArmPlugin::OnUpdate(const common::UpdateInfo& updateInfo)
 				// compute the smoothed moving average of the delta of the distance to the goal
 				avgGoalDelta  = (avgGoalDelta * 0.05) + (distDelta * 0.95);
 				if (avgGoalDelta > 0)
-					rewardHistory = REWARD_WIN * 1;
+					rewardHistory = REWARD_CLOSER;
 				else
-					rewardHistory = REWARD_LOSS * 1;
+					rewardHistory = REWARD_FARTHER;
 				newReward     = true;	
 			}
 
